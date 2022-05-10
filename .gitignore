@@ -18,6 +18,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.pth
+*.json
 *.egg
 node_modules
 __pycache__/

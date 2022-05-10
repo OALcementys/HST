@@ -372,7 +372,7 @@ def bayesian_selection(matrix,target,n_splits=2):
 
 # In[222]:
 
-def deploy(model,data,target_column,method,optimizer=None):
+def deploy(model,data,method,optimizer=None,target_column='target_variable'):
     methods_list=['std_regression',
               'std_regression_cross',
               'use_NN_optimizer',
@@ -414,32 +414,62 @@ def deploy(model,data,target_column,method,optimizer=None):
 
 
 ##some helper functions
+
 def normalize_date_time(dataframes):
     for data in dataframes:
         data['timestamp'] = pd.to_datetime(data['timestamp'].astype('datetime64[ns]'))
     return dataframes
 
-def time_interpolation(d1,d2):
-    df=pd.concat([d1, d2])
-    dataframes=pd.DataFrame(df['timestamp'])
-    dataframes.set_index(df['timestamp'])
-    df=df.set_index('timestamp')
-    df = df.sort_values(by="timestamp")
-    for column in df.columns:
-        d1=df[column]
-        dataframes[column]=pd.DataFrame(d1.interpolate()).values
-    return dataframes
-def datetime_interploation(dataframes):
+def time_interpolation(d1,d2,option='tolerance sampling'):
+
+    if option=='upsampling':
+        df=pd.concat([d1, d2])
+        dataframes=pd.DataFrame(df['timestamp'])
+        dataframes.set_index(df['timestamp'])
+        df=df.set_index('timestamp')
+        df = df.sort_values(by="timestamp")
+        for column in df.columns:
+            d1=df[column]
+            dataframes[column]=pd.DataFrame(d1.interpolate()).values
+        #merged['timestamp']=merged.index
+        dataframes=dataframes.reset_index(drop=True)
+        return dataframes
+
+    elif  option=='tolerance sampling':
+        lens={len(d1):d1,len(d2):d2}
+        maxdf=lens[max(len(d1),len(d2))]
+        mindf=lens[min(len(d1),len(d2))]
+        kept_columns=maxdf.columns.append(mindf.columns)
+        maxdf.index = maxdf['timestamp']
+        mindf.index = mindf['timestamp']
+        maxdf=maxdf.set_index('timestamp')
+        mindf=mindf.set_index('timestamp')
+        kept_columns=maxdf.columns.append(mindf.columns)
+        maxdf = maxdf.sort_values(by="timestamp")
+        mindf = mindf.sort_values(by="timestamp")
+        tol = (maxdf.index[-1]-maxdf.index[0])/len(maxdf)
+        merged=pd.merge_asof(left=maxdf,right=mindf,right_index=True,
+        left_index=True,direction='nearest',tolerance=tol)
+        merged=merged.dropna()
+        merged['timestamp']=merged.index
+        merged=merged.reset_index(drop=True)
+        return merged
+    elif option=='downsampling':
+        print('not coded yet')
+        quit()
+
+
+def datetime_interploation(dataframes,option='tolerance sampling'):
     df=dataframes[0]
     for data in dataframes[1:]:
-        df=time_interpolation(df,data)
+        df=time_interpolation(df,data,option)
     return df
 
 
-def final_prep(dataframes):
+def final_prep(dataframes,option='tolerance sampling'):
     target_column='target_variable'
     dataframes=normalize_date_time(dataframes)
-    df=datetime_interploation(dataframes)
+    df=datetime_interploation(dataframes,option)
     df=df.dropna()
     df = df.rename(index=str,columns= {'timestamp': "Time"})
     df['Time'] = pd.to_datetime(df['Time'])

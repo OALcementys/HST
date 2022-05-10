@@ -151,9 +151,11 @@ class Database:
             if conn is not None:
                 conn.close()
 class Query:
+
     def __init__(self, host, db_name, user, port, password):
         self.db = Database(
             host=host, database=db_name, user=user, port=port, password=password )
+
     def get_df_by_variable_id(self, variable_id, variable_name):
         query = """
             SELECT r.timestamp, r.value, r.variable_id FROM raw_data r
@@ -162,6 +164,7 @@ class Query:
         data = self.db.select(query, (variable_id,))
         df = pd.DataFrame(data=data, columns=["timestamp", variable_name,'id'])
         return df.drop(columns=['id'])
+
     def get_df_by_variable_id(self, variable_id, variable_name):
         query = """
             SELECT r.timestamp, r.value, r.variable_id FROM raw_data r
@@ -170,6 +173,7 @@ class Query:
         data = self.db.select(query, (variable_id,))
         df = pd.DataFrame(data=data, columns=["timestamp", variable_name,'id'])
         return df.drop(columns=['id'])
+
     def get_variable_name_by_id(self, variable_id):
 
         query="""
@@ -180,12 +184,25 @@ class Query:
 
         data = self.db.selectDataframe(query)
         return data.iloc[0][1]
+
+
     def deleteData(self, offset_variable_id, startDate):
         sqlQuery = """
                     DELETE FROM raw_data_save
                     WHERE timestamp >= to_timestamp('{}','YYYY-MM-DD HH24:MI:SS') and variable_id={}
                     """.format(startDate, offset_variable_id)
         self.db.delete(sqlQuery)
+
+
+    def get_variable_metric(self, variable_id):
+        sqlQuery = """
+                        select  unit from variables v join metrics m
+                        on v.metric_id =m.id where v.id='{}'
+
+                    """.format(variable_id)
+        return self.db.select(sqlQuery)[0][0]
+
+
 
     def insert_result_variable(self, df, res_name, res_metric_id) :
         # create new sensor for the resulted variable
