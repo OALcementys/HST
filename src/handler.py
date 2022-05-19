@@ -1,22 +1,32 @@
-from src.HST_variations import *
-from src.database import *
+from src.python_functions.HST_variations import *
+from src.python_functions.database import *
+#from python_functions.HST_variations import *
+#from python_functions.database import *
 import json
 
-
-
-def deploy(event,context) :
-    json_region = os.environ['AWS_REGION']
-    try :
-        data = json.loads(event['body'])
-        db_host = os.environ['DB_HOST']
-        db_name = os.environ['DB_NAME']
-        db_user = os.environ['DB_USER']
-        db_port = os.environ['DB_PORT']
+"""
+        db_host = os.environ['db_host']
+        db_name = os.environ['db_name']
+        db_user = os.environ['db_user']
+        db_port = os.environ['db_port']
         db_password = os.environ['DB_PASSWORD']
-        queryManager = Query(dbHost, dbName, dbUser,dbPort, dbPassword)
+        json_region = os.environ['REGION']
+"""
+def deploy(event,context) :
+
+    try :
+        data =event['body']
+        print('json file extracted : ', data )
+        db_host = os.environ['db_host']
+        db_name = os.environ['db_name']
+        db_user = os.environ['db_user']
+        db_port = os.environ['db_port']
+        db_password = os.environ['db_pass']
+        queryManager = Query(db_host, db_name, db_user,db_port, db_password)
+
         res,id_res_var=prepare_res(queryManager,data)
         queryManager.deleteData(id_res_var, '1967-01-01 00:00:00.00+02:00')
-        queryManager.db.insertDataframe(df_res, 'raw_data_save')
+        queryManager.db.insertDataframe(res, 'raw_data_save')
         response = {
             "statusCode": 200,
             "headers": {
@@ -24,11 +34,12 @@ def deploy(event,context) :
                 "Access-Control-Allow-Origin": "*",
             },
             "body": json.dumps({
-                "variable_id": res_id,
+                "variable_id": id_res_var,
 
             }),
         }
-        return response
+
+
     except:
         response = {
             "statusCode": 500,
@@ -37,7 +48,8 @@ def deploy(event,context) :
             },
             "body": 'Damaged json file error... pls contact administrator',
         }
-    return None
+
+    return response
 
 
 """"
@@ -57,5 +69,8 @@ data={'model': [{'target': 1238,
 
 
 
-event={'body':data}
+event={'info':'info' , body':data}
+
+running locally command  : serverless invoke local --function main --path ./src/test.json
+
 """

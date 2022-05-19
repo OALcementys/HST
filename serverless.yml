@@ -1,6 +1,6 @@
 service: eneos
 
-frameworkVersion: '2'
+frameworkVersion: '3'
 
 
 
@@ -16,7 +16,7 @@ provider:
   name: aws
   lambdaHashingVersion: 20201221
   runtime: python3.8
-  stage: prod
+  stage: test
   region: ${file(./config.${self:provider.stage}.yml):REGION}
   environment:
     db_host: ${file(./config.${self:provider.stage}.yml):DBHOST}
@@ -24,12 +24,12 @@ provider:
     db_pass:  ${file(./config.${self:provider.stage}.yml):DBPASS}
     db_port:  ${file(./config.${self:provider.stage}.yml):DBPORT}
     db_user:  ${file(./config.${self:provider.stage}.yml):DBUSER}
-  vpc:
-    securityGroupIds:
-      - ${file(./config.${self:provider.stage}.yml):VPC_GROUP_ID}
-    subnetIds:
-      - ${file(./config.${self:provider.stage}.yml):VPC_SUBNET}
-      - ${file(./config.${self:provider.stage}.yml):VPC_SUBNET2}
+# vpc:
+#    securityGroupIds:
+#      - ${file(./config.${self:provider.stage}.yml):VPC_GROUP_ID}
+#    subnetIds:
+#      - ${file(./config.${self:provider.stage}.yml):VPC_SUBNET}
+#      - ${file(./config.${self:provider.stage}.yml):VPC_SUBNET2}
 
 package:
   patterns:
@@ -45,7 +45,7 @@ functions:
   main:
     timeout: 900
     memorySize: 1024
-    handler: src/handler.deploy
+    handler: src.handler.deploy
 
     # event disabled cause in development step
     # events:

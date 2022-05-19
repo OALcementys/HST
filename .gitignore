@@ -3,6 +3,7 @@
 env/
 build/
 .ipynb_checkpoints/
+.*sh
 dist/
 downloads/
 data/
