@@ -1,0 +1,52 @@
+service: eneos
+
+frameworkVersion: '2'
+
+
+
+custom:
+  # this install python requirements from requirements.txt
+  # library docs: https://www.serverless.com/plugins/serverless-python-requirements
+  pythonRequirements:
+    dockerizePip: non-linux
+
+
+
+provider:
+  name: aws
+  lambdaHashingVersion: 20201221
+  runtime: python3.8
+  stage: prod
+  region: ${file(./config.${self:provider.stage}.yml):REGION}
+  environment:
+    db_host: ${file(./config.${self:provider.stage}.yml):DBHOST}
+    db_name:  ${file(./config.${self:provider.stage}.yml):DBNAME}
+    db_pass:  ${file(./config.${self:provider.stage}.yml):DBPASS}
+    db_port:  ${file(./config.${self:provider.stage}.yml):DBPORT}
+    db_user:  ${file(./config.${self:provider.stage}.yml):DBUSER}
+  vpc:
+    securityGroupIds:
+      - ${file(./config.${self:provider.stage}.yml):VPC_GROUP_ID}
+    subnetIds:
+      - ${file(./config.${self:provider.stage}.yml):VPC_SUBNET}
+      - ${file(./config.${self:provider.stage}.yml):VPC_SUBNET2}
+
+package:
+  patterns:
+    - '!src/**/test_*.py'
+    - '!src/**/__pycache__'
+    - '!config.*.yml'
+
+plugins:
+  - serverless-python-requirements
+
+
+functions:
+  main:
+    timeout: 900
+    memorySize: 1024
+    handler: src/handler.deploy
+
+    # event disabled cause in development step
+    # events:
+    #   - schedule: rate(10 minutes)

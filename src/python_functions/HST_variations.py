@@ -13,23 +13,18 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import datetime
 import numpy as np
-import missingno as mno
 from sklearn.linear_model import LinearRegression
-from sklearn.decomposition import PCA
 from sklearn.impute import KNNImputer
 import time
 import torch
 from torch.optim.lr_scheduler import *
 from sklearn.linear_model import LinearRegression as LR
-from sklearn.decomposition import PCA
 from sklearn.impute import KNNImputer
-from torchsummary import summary
 from torch.autograd import Variable
 from sklearn.metrics import *
 from torch.optim.lr_scheduler import ExponentialLR
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
-from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -38,21 +33,10 @@ from numpy import linalg as LA
 import time
 
 
-# In[143]:
 """
-wl_column='H'
-target_column= 'deplacement'
-
-methods_list=['std_regression',
-              'std_regression_cross',
-              'use_NN_optimizer',
-              'use_NN_optimizer_cross',
-             'use_bayesian_approch']
-optimizer='Adam'
+The main part of the HST method have been implemented following Luc Chouinard and Vincnet Roy paper :
+'PERFORMANCE OF STATISTICAL MODELS FOR DAM MONITORING DATA '
 """
-
-
-# In[144]:
 
 
 # checking nan values for data frame
@@ -63,7 +47,9 @@ def check_nan_values(dataframe):
             print(column, 'missing data: ',dataframe[column].isnull().sum())
     else : print('dataframe on point')
 
-##time prep is computed for standard scaled time and for seasonal term whether it's used or not
+"""
+time prep is computed for standard scaled time and for seasonal term whether it's used or not
+"""
 def time_prep(dataframe,column='Time'):
     window_observation=dataframe[column][len(dataframe)-1]-dataframe[column][0]
     dataframe['scaled_time']=dataframe[column].apply(lambda T :((T-dataframe[column][0]).total_seconds())/window_observation.total_seconds())
@@ -71,8 +57,9 @@ def time_prep(dataframe,column='Time'):
     dataframe['seasonal_time']=dataframe[column].apply(lambda T :(2*np.pi*(T-dataframe[column][0]).total_seconds())/365*24*60*60)
     return dataframe
 
-
-##hydrostatic load
+"""
+fixed order of hydrostatic load term for multi linear regression  to 4
+"""
 def hydrostatic_load(dataframe,wl_column,regression_order=4):
     hydrostaic_columns=[]
     max_observation=np.max(dataframe[wl_column])
@@ -85,7 +72,8 @@ def hydrostatic_load(dataframe,wl_column,regression_order=4):
         hydrostaic_columns.append(order)
     return dataframe,hydrostaic_columns
 #seasonal term
-
+"""
+Possible later computation of a miniman time threshold for including seasonal componnent"""
 def seasonal_term(dataframe):
     #scaled_time=dataframe['seasonal_time']
     season_columns=['sin','cos','sin2','sincos']
@@ -125,6 +113,10 @@ def temperature_component(data,temp_column):
             Temp_columns.append('sin_temp_'+str(k),'cos_temp_'+str(k))
     return data ,Temp_columns
 
+
+"""
+We normalize Custom variable components that can be added to the model
+"""
 def variable_component(data,variable_column):
     scale=np.max(data[variable_column])-np.min(data[variable_column])
     if scale==0:
@@ -136,6 +128,7 @@ def variable_component(data,variable_column):
 
 
 
+##Dataframe cleaning and prep for model
 def prepare_prediction(dataframe,model):
     #assert len(model_columns)==len(model)
     df=dataframe.copy()
@@ -163,29 +156,16 @@ def prepare_prediction(dataframe,model):
     return df[kept_columns]
 
 
-
-
-
-
+## Linear regression model
 def linear_regression(data,target):
-    #monitored_=data[pd.notnull(data[target_column])]
-    #monitored_=monitored_[pd.notnull(monitored_[wl_column])]
     start=time.time()
-    #dataframe=prepare_prediction(data,model)
-    #print('computed variables in :' ,time.time()-start)
-    #check_nan_values(data)
     regr =LinearRegression()
-    #regr.fit(dataframe,monitored_[target_column])
     regr.fit(data,target)
-    #print( 'regr score for '+target_column+'is:' , regr.score(data,target))
-    #dataframe.insert(0,'corrected observation',monitored_[target_column] -np.array(regr.predict(dataframe)))
-    #dataframe.insert(len(dataframe.columns),target_column,monitored_[target_column])
     return regr
 
 
-# In[70]:
 
-
+##Computing k fold cross validation
 def regression_kfold(matrix,target,n_splits):
     cv_outer = KFold(n_splits, shuffle=True, random_state=0)
     # enumerate splits
@@ -215,6 +195,7 @@ def regression_kfold(matrix,target,n_splits):
 
 
 
+##best model
 def standard_regression(data,target,use_cross_val):
     if use_cross_val:
         regr=regression_kfold(data.T,target,n_splits=3)
@@ -230,6 +211,8 @@ def standard_regression(data,target,use_cross_val):
 
 
 # Main optimization loop
+
+##Using a NN layer for optimizer switching
 def optimizer_variation(matrix,  target,  optimizer,  lr=0.01,  num_epoch=2500):
     A = torch.randn((1, matrix.shape[0]), requires_grad=True)
     b = torch.randn(1, requires_grad=True)
@@ -305,7 +288,13 @@ def k_fold_cross(matrix,target,optimizer):
 
 # In[220]:
 
+###############################################
 
+"""
+Bayesian Approch implementation
+Inspired by https://zjost.github.io/bayesian-linear-regression/
+We consider the error follwing a normal distribution and compute  bayesian theory for regression
+"""
 def calculate_w(l, phi, t, N_rows, M_cols):
     LI = np.eye(M_cols) * l
     innerPrdt = (LI + np.matmul(np.transpose(phi),phi))
@@ -339,6 +328,7 @@ def bayesian_model_selection(train, trainR, test, testR):
     #print("computed bayesian model in ", time.time()-start_time)
     return mse,w
 
+##Kfold on bayesian model
 def bayesian_selection(matrix,target,n_splits=2):
     X=matrix.T
     y=target
@@ -365,14 +355,14 @@ def bayesian_selection(matrix,target,n_splits=2):
     return np.dot(X,best_weight)
 
 
-# In[221]:
 
+#######################
 
+"""
+summarizing function
+"""
+def deploy(model,data,method='use_NN_optimizer',optimizer=None,target_column='target_variable'):
 
-
-# In[222]:
-
-def deploy(model,data,method,optimizer=None,target_column='target_variable'):
     methods_list=['std_regression',
               'std_regression_cross',
               'use_NN_optimizer',
@@ -413,15 +403,21 @@ def deploy(model,data,method,optimizer=None,target_column='target_variable'):
     return dataframe
 
 
-##some helper functions
 
+
+###time handling relative to merging data
 def normalize_date_time(dataframes):
     for data in dataframes:
         data['timestamp'] = pd.to_datetime(data['timestamp'].astype('datetime64[ns]'))
     return dataframes
 
-def time_interpolation(d1,d2,option='tolerance sampling'):
-
+"""
+interpolation techniques
+---we used tolerance sampling with a window relative to data lengh in a way that two diffrent observation in a same window will have the same timestamp
+--- second approch will be interpolation relative to time stamp (linear)
+"""
+def time_interpolation(d1,d2,option):
+    if option==None:option='tolerance_sampling'
     if option=='upsampling':
         df=pd.concat([d1, d2])
         dataframes=pd.DataFrame(df['timestamp'])
@@ -435,7 +431,7 @@ def time_interpolation(d1,d2,option='tolerance sampling'):
         dataframes=dataframes.reset_index(drop=True)
         return dataframes
 
-    elif  option=='tolerance sampling':
+    elif  option=='tolerance_sampling':
         lens={len(d1):d1,len(d2):d2}
         maxdf=lens[max(len(d1),len(d2))]
         mindf=lens[min(len(d1),len(d2))]
@@ -459,7 +455,7 @@ def time_interpolation(d1,d2,option='tolerance sampling'):
         quit()
 
 
-def datetime_interploation(dataframes,option='tolerance sampling'):
+def datetime_interploation(dataframes,option):
     df=dataframes[0]
     for data in dataframes[1:]:
         df=time_interpolation(df,data,option)
@@ -485,11 +481,87 @@ def prepare_corrected_obs(res,id_res_var):
     df_res=df_res.rename(index=str,columns= {'corrected observation': "value"})
     df_res['variable_id'] = id_res_var
     return df_res
+##function to retrieve variables
+def get_targetvr_df(queryManager,dataframes,id_tv_var):
+    target_column= 'target_variable'
+    target_variable_name=queryManager.get_variable_name_by_id(id_tv_var)
+    df_def = queryManager.get_df_by_variable_id(id_tv_var, target_column)
+    dataframes.append(df_def)
+    return dataframes
+def get_temp_df(queryManager,dataframes,id_temperature_var):
+    df_temp= queryManager.get_df_by_variable_id(id_temperature_var, 'temperature')
+    assert queryManager.get_variable_metric(id_temperature_var)=='°C'
+    dataframes.append(df_temp)
+    return dataframes
+def get_waterlevel_df(queryManager,dataframes,id_water_level_var):
+    df_def = queryManager.get_df_by_variable_id(id_water_level_var, 'water_level')
+    assert queryManager.get_variable_metric(id_water_level_var)=='mA'
+    dataframes.append(df_def)
+    return dataframes
+def get_var_df(queryManager,dataframes,id_tv_var,model):
+    variable_name=queryManager.get_variable_name_by_id(id_tv_var)
+    df_def = queryManager.get_df_by_variable_id(id_tv_var, variable_name)
+    model.append(variable_name)
+    dataframes.append(df_def)
+    return dataframes,model
+
+##data is the json file : we extract variables upon it
+def get_model_comps(queryManager,data):
+    for model in data:
+        static_colums=['H','S','T','temp','target']
+        model_comp=[]
+        dataframes=[]
+        variables,advanced=data['model']
+        dataframes=get_targetvr_df(queryManager,dataframes,variables['target'])
+        if variables['T']:model_comp.append('T')
+        if variables['S']:model_comp.append('S')
+        if 'H' in variables :
+            dataframes=get_waterlevel_df(queryManager,dataframes,variables['H'])
+            model_comp.append('H')
+        if 'temp' in variables :
+                dataframes=get_temp_df(queryManager,dataframes,variables['temp'])
+                model_comp.append('temp')
+        crops=list(variables.keys())
+        added_variables=list(set(crops)-set(np.intersect1d(static_colums,crops)))
+        if len(added_variables)>0 :
+            for i in range(len(added_variables)):
+                dataframes,model_comp=get_var_df(queryManager,dataframes,variables[added_variables[i]],model_comp)
+        return dataframes,model_comp,advanced
+
+#final function
+def prepare_res(queryManager,data):
+    start=time.time()
+    print('computation started : ' ,  time.strftime("%c"))
+    dataframes,model_comp,advanced=get_model_comps(queryManager,data)
+    __,advanced=data['model']
+    option,method,optimizer=advanced['interpolation'],advanced['Approch'],advanced['Optimizer']
+    df=final_prep(dataframes,option=option)
+    res=deploy(model_comp,df,method=method,optimizer=optimizer)
+    print('computation took {:.3f} seconds ' .format(time.time()-start))
+    id_res_var=advanced['res_id']
+    df_res =prepare_corrected_obs(res,id_res_var)
+    return df_res,id_res_var
+
+
+"""
+json file form example
+data={'model': [{'target': 1238,
+   'H': 1246,
+   'T': True,
+   'S': True,
+   'temp': 1245,
+   'V': 1238},
+  {'Approch': 'use_NN_optimizer',
+   'Optimizer': 'SGD',
+   'loss': 'MSE',
+   'metric': 'R2',
+   'interpolation': 'upsampling',
+   'res_id': 112}]}
 
 
 
-
-
+event={'body':data}
+   """
 
 
 

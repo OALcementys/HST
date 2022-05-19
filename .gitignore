@@ -18,6 +18,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.pth
+*.ipynb
 *.json
 *.egg
 node_modules
@@ -26,6 +27,6 @@ __pycache__/
 .coverage
 htmlcov
 cover
-
+/notebooks
 # Serverless directories
 .serverless
