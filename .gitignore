@@ -6,6 +6,8 @@ build/
 .*sh
 dist/
 downloads/
+code/node_modules/
+*.json
 data/
 checkpoints/
 siamese-triplet/
@@ -31,3 +33,5 @@ cover
 /notebooks
 # Serverless directories
 .serverless
+/virtual
+

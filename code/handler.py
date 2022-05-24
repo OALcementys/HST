@@ -1,18 +1,14 @@
+
+
 from src.python_functions.HST_variations import *
 from src.python_functions.database import *
 #from python_functions.HST_variations import *
 #from python_functions.database import *
 import json
+import time
+import pandas as pd
 
-"""
-        db_host = os.environ['db_host']
-        db_name = os.environ['db_name']
-        db_user = os.environ['db_user']
-        db_port = os.environ['db_port']
-        db_password = os.environ['DB_PASSWORD']
-        json_region = os.environ['REGION']
-"""
-def deploy(event,context) :
+def deploy(event,context,track_json=False) :
 
     try :
         data =event['body']
@@ -49,6 +45,10 @@ def deploy(event,context) :
             "body": 'Damaged json file error... pls contact administrator',
         }
 
+
+    query=f'''INSERT INTO treatments(processing_jsonb) VALUES ('{json.dumps(response)}') '''
+    if track_json: queryManager.db.insert(query)
+    print('saved response')
     return response
 
 
@@ -66,11 +66,7 @@ data={'model': [{'target': 1238,
    'metric': 'R2',
    'interpolation': 'upsampling',
    'res_id': 112}]}
-
-
-
 event={'info':'info' , body':data}
-
 running locally command  : serverless invoke local --function main --path ./src/test.json
-
+serverless config credentials --provider aws --key AKIAWQYPGV3OMBIWUQWD --secret  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 --profile otmane
 """

@@ -137,6 +137,24 @@ class Database:
             #return 1
         print("Insert dataframe done with success!")
         cursor.close()
+    def insertjsonb(self, df, table):
+        # save dataframe to an in memory buffer
+        buffer = StringIO()
+        df.to_csv(buffer, index_label='id', header=False)
+        buffer.seek(0)
+
+        conn = self.getConnection()
+        cursor = conn.cursor()
+        #try:
+        cursor.copy_from(buffer, table, sep=",")
+        conn.commit()
+        #except (Exception, psycopg2.DatabaseError) as error:
+        #    print("Error: %s" % error)
+        #    conn.rollback()
+    #        cursor.close()
+            #return 1
+        print("Insert dataframe done with success!")
+        cursor.close()
 
 
     def toPandas(self, query, params = None):
@@ -185,7 +203,6 @@ class Query:
         data = self.db.selectDataframe(query)
         return data.iloc[0][1]
 
-
     def deleteData(self, offset_variable_id, startDate):
         sqlQuery = """
                     DELETE FROM raw_data_save
@@ -193,6 +210,14 @@ class Query:
                     """.format(startDate, offset_variable_id)
         self.db.delete(sqlQuery)
 
+    def deletejson(self, response):
+
+        sqlQuery = """
+                        DELETE FROM treatments
+                        WHERE processing_jsonb = {}""".format(response)
+        self.db.delete(sqlQuery)
+        print('deleted previous treatement')
+        
 
     def get_variable_metric(self, variable_id):
         sqlQuery = """

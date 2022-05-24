@@ -1,4 +1,4 @@
-service: eneos
+service: hstdeploy
 
 frameworkVersion: '3'
 
@@ -8,6 +8,7 @@ custom:
   # this install python requirements from requirements.txt
   # library docs: https://www.serverless.com/plugins/serverless-python-requirements
   pythonRequirements:
+    filename : requirements.txt
     dockerizePip: non-linux
 
 
@@ -16,7 +17,7 @@ provider:
   name: aws
   lambdaHashingVersion: 20201221
   runtime: python3.8
-  stage: test
+  stage: dev
   region: ${file(./config.${self:provider.stage}.yml):REGION}
   environment:
     db_host: ${file(./config.${self:provider.stage}.yml):DBHOST}
@@ -24,6 +25,7 @@ provider:
     db_pass:  ${file(./config.${self:provider.stage}.yml):DBPASS}
     db_port:  ${file(./config.${self:provider.stage}.yml):DBPORT}
     db_user:  ${file(./config.${self:provider.stage}.yml):DBUSER}
+
 # vpc:
 #    securityGroupIds:
 #      - ${file(./config.${self:provider.stage}.yml):VPC_GROUP_ID}
@@ -45,8 +47,6 @@ functions:
   main:
     timeout: 900
     memorySize: 1024
-    handler: src.handler.deploy
-
-    # event disabled cause in development step
-    # events:
-    #   - schedule: rate(10 minutes)
+    handler: handler.deploy
+    layers:
+      - ${file(./config.${self:provider.stage}.yml):LAYER_torch}

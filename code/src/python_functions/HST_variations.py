@@ -3,14 +3,12 @@
 
 # In[142]:
 
-
+import json
 import numpy as np
 import pandas as pd
 import os
 import warnings
 warnings.filterwarnings('ignore')
-import matplotlib.pyplot as plt
-import seaborn as sns
 import datetime
 import numpy as np
 from sklearn.linear_model import LinearRegression
