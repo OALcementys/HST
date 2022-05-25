@@ -3,19 +3,9 @@ service: hstdeploy
 frameworkVersion: '3'
 
 
-
-custom:
-  # this install python requirements from requirements.txt
-  # library docs: https://www.serverless.com/plugins/serverless-python-requirements
-  pythonRequirements:
-    filename : requirements.txt
-    dockerizePip: non-linux
-
-
-
 provider:
   name: aws
-  lambdaHashingVersion: 20201221
+
   runtime: python3.8
   stage: dev
   region: ${file(./config.${self:provider.stage}.yml):REGION}
@@ -26,27 +16,17 @@ provider:
     db_port:  ${file(./config.${self:provider.stage}.yml):DBPORT}
     db_user:  ${file(./config.${self:provider.stage}.yml):DBUSER}
 
-# vpc:
-#    securityGroupIds:
-#      - ${file(./config.${self:provider.stage}.yml):VPC_GROUP_ID}
-#    subnetIds:
-#      - ${file(./config.${self:provider.stage}.yml):VPC_SUBNET}
-#      - ${file(./config.${self:provider.stage}.yml):VPC_SUBNET2}
-
 package:
   patterns:
     - '!src/**/test_*.py'
     - '!src/**/__pycache__'
     - '!config.*.yml'
 
-plugins:
-  - serverless-python-requirements
-
-
 functions:
   main:
     timeout: 900
     memorySize: 1024
+    ### uncomment handler to deploy locally ...serverless can't handle deploying ecr docker image locally
     handler: handler.deploy
-    layers:
-      - ${file(./config.${self:provider.stage}.yml):LAYER_torch}
+    #image: 448319106780.dkr.ecr.eu-west-3.amazonaws.com/eneos-ecr:latest
+    #image : 448319106780.dkr.ecr.eu-west-3.amazonaws.com/eneos-ecr@sha256:292d1d5f6dfb6d707fa417caf7a56c0fb95e5e358e22d56e66e1bd39cefee8b3
