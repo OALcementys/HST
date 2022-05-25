@@ -14,8 +14,4 @@ VPC_GROUP_ID: sg-3c257853
 VPC_SUBNET: subnet-486af205
 
 
- ####LAYER_torch: arn:aws:lambda:eu-west-3:934676248949:layer:pytorchv1-py36:2
-#LAYER_numpy: arn:aws:lambda:eu-west-3:934676248949:layer:pytorchv1-py36:2
-#LAYER_psycopg2:
-#LAYER_scikit_learn:
-#LAYER_pandas:
+
