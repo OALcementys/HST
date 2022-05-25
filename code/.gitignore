@@ -34,4 +34,4 @@ cover
 # Serverless directories
 .serverless
 /virtual
-code/config.dev.yml
+/config.dev.yml
