@@ -9,10 +9,9 @@ fullstack developers as to the development of the structure of our solution and 
 # Architecture
 
 The lambda follows the following structure :
- - src/:  source code for the method which include necessary python functions.
- - test.json: test file to test the lambda, works for either local and remote deployement.
+ - code/:  source code for the method which include necessary python functions.
  - handler.py : the main lambda function triggered by a json file as event.
  - config.example.yml: yaml config file example format.  
- - deploy.sh: deployement script that will be used for automation
+ - deploy.sh: deployement script used for automation
  - serverless.yml: the serverless configuration file for the app
- -  notebooks/ : helper notebooks for data analysis.
+
