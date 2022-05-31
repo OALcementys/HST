@@ -68,5 +68,5 @@ data={'model': [{'target': 1238,
    'res_id': 112}]}
 event={'info':'info' , body':data}
 running locally command  : serverless invoke local --function main --path ./src/test.json
-serverless config credentials --provider aws --key AKIAWQYPGV3OMBIWUQWD --secret  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 --profile otmane
+
 """
